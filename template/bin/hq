@@ -1,0 +1,46 @@
+#!/bin/sh
+# hq: start Claude Code in the Agent HQ office.
+#   hq [args]       Claude (normal login)
+#   hq glm [args]   GLM via the settings file (HQ_PROVIDER=glm)
+#   hq help | -h    usage
+# Test hooks: HQ_CLAUDE (binary), HQ_GLM_SETTINGS (settings path).
+# Never reads or prints the GLM settings file; it only checks that it exists.
+
+HQ_DIR=$HOME/HQ
+CLAUDE_BIN=${HQ_CLAUDE:-claude}
+GLM_SETTINGS=${HQ_GLM_SETTINGS:-$HOME/.config/agent-hq/glm-settings.json}
+
+usage() {
+  cat <<'EOF'
+usage: hq [claude args]       start the office on Claude
+       hq glm [claude args]   start the office on GLM
+       hq help | -h           show this help
+
+notes:
+  - GLM mode maps opus, sonnet and haiku to glm-5.3 via the settings file
+    (~/.config/agent-hq/glm-settings.json).
+  - Remote Control likely doesn't work in GLM mode: the GLM auth token
+    overrides the claude.ai login. Use plain `hq` for phone/remote sessions.
+EOF
+}
+
+case "$1" in
+  help|-h|--help)
+    usage
+    exit 0
+    ;;
+esac
+
+cd "$HQ_DIR" || { echo "hq: cannot cd to $HQ_DIR" >&2; exit 1; }
+
+if [ "$1" = "glm" ]; then
+  shift
+  if [ ! -f "$GLM_SETTINGS" ]; then
+    echo "hq: GLM settings file not found (~/.config/agent-hq/glm-settings.json)" >&2
+    exit 1
+  fi
+  HQ_PROVIDER=glm exec "$CLAUDE_BIN" --settings "$GLM_SETTINGS" "$@"
+fi
+
+unset HQ_PROVIDER
+exec "$CLAUDE_BIN" "$@"

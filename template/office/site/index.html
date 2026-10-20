@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b1d2e; --panel: #f8f8f0; --ink: #282830; --frame: #3a6ea5; --frame-dark: #24497a;
+    --accent: #e8483c; --muted: #6b6b78; --ok: #3a9a40; --tag: #304878;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--panel);
+    font-family: 'Press Start 2P', ui-monospace, monospace; -webkit-font-smoothing: none; }
+  body { padding: 12px 16px 32px; min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    max-width: 960px; margin: 0 auto 10px; flex-wrap: wrap; }
+  h1 { font-size: 14px; margin: 0; letter-spacing: 1px; color: #f8d030; text-shadow: 2px 2px 0 #a04000; }
+  .meta { font-size: 8px; color: #b8b8c8; line-height: 1.6; }
+  .btn { font: inherit; font-size: 8px; background: var(--panel); color: var(--ink); border: 3px solid var(--ink);
+    box-shadow: inset -2px -2px 0 #c8c8c0; padding: 6px 8px; cursor: pointer; }
+  .btn:active { transform: translateY(1px); }
+  .actions { display: flex; gap: 6px; }
+  #feed .uid { user-select: all; -webkit-user-select: all; word-break: break-all; background: #fff; padding: 2px 4px; }
+  #room { position: relative; margin: 0 auto; border: 4px solid #0c0c14; box-shadow: 0 0 0 4px #505070; }
+  #room canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  .spot { position: absolute; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tag { position: absolute; left: 50%; top: 100%; transform: translate(-50%, -2px); z-index: 1; white-space: nowrap;
+    font-size: 7px; color: #fff; background: var(--tag); border: 2px solid #101828; padding: 3px 4px 2px; }
+  .tag.boss { background: #8a3020; }
+  .tag .lv { color: #f8d030; margin-left: 4px; }
+  .bubble { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, 4px); width: max-content;
+    max-width: 150px; font-size: 7px; line-height: 1.5; color: var(--ink); background: #fff; border: 2px solid var(--ink);
+    padding: 4px 5px; border-radius: 4px; z-index: 2; }
+  .zzz { position: absolute; left: 60%; top: 20%; font-size: 9px; color: #e8f0ff; text-shadow: 1px 1px 0 #303050;
+    animation: zz 2.4s steps(6) infinite; pointer-events: none; }
+  @keyframes zz { 0% { opacity: 0; transform: translate(0, 6px); } 30% { opacity: 1; }
+    100% { opacity: 0; transform: translate(10px, -14px); } }
+  #feed { max-width: 960px; margin: 14px auto 0; background: var(--panel); color: var(--ink);
+    border: 4px solid var(--ink); box-shadow: inset 0 0 0 3px #d8d0b0; padding: 10px 12px; font-size: 8px; line-height: 2; }
+  #feed b { color: var(--accent); font-weight: normal; }
+  #feed .t { color: var(--muted); }
+  /* Trainer card / modal */
+  #modal { position: fixed; inset: 0; background: rgba(8, 8, 16, .7); display: none; align-items: center;
+    justify-content: center; padding: 16px; z-index: 10; }
+  #modal.open { display: flex; }
+  .card { width: 100%; max-width: 420px; max-height: 88vh; overflow: auto; background: #f0d8a0;
+    border: 4px solid var(--ink); border-radius: 10px; box-shadow: inset 0 0 0 4px #e0b860; color: var(--ink); padding: 14px; }
+  .card h2 { font-size: 11px; margin: 0 0 10px; display: flex; justify-content: space-between; }
+  .card .row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .card canvas { width: 72px; height: 72px; image-rendering: pixelated; background: #f8f0d8; border: 3px solid var(--ink); flex: none; }
+  .card dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 8px; margin: 0; flex: 1; }
+  .card dt { color: #806030; } .card dd { margin: 0; text-align: right; }
+  .xp { height: 8px; border: 2px solid var(--ink); background: #fff; margin: 4px 0 10px; }
+  .xp i { display: block; height: 100%; background: #48b8e8; }
+  .card h3 { font-size: 8px; margin: 12px 0 6px; color: #804018; }
+  .card ul { list-style: none; padding: 0; margin: 0; font-size: 7px; line-height: 1.9; }
+  .card li { border-bottom: 2px dotted #c8a868; padding: 2px 0; }
+  .card li span { color: #806030; }
+  .card .close { float: right; }
+  .stars { color: #e8a000; letter-spacing: 2px; }
+  .card table { width: 100%; border-collapse: collapse; font-size: 7px; line-height: 1.9; }
+  .card th, .card td { text-align: right; padding: 2px 3px; border-bottom: 2px dotted #c8a868; white-space: nowrap; }
+  .card th:first-child, .card td:first-child { text-align: left; white-space: normal; }
+  .card th { color: #806030; font-weight: normal; }
+  /* Office + library side by side on wide screens, library below the office otherwise */
+  #rooms { display: flex; flex-direction: column; align-items: center; gap: 14px; margin: 0 auto; }
+  #library { width: 100%; max-width: 960px; min-width: 0; }
+  #library:empty { display: none; }
+  @media (min-width: 1100px) {
+    header, #feed, #rooms { max-width: 1600px; }
+    #rooms { flex-direction: row; align-items: flex-start; justify-content: center; }
+    #room { margin: 0; flex: none; }
+    #library { flex: 0 1 35%; max-width: 35%; }
+  }
+  /* OPEN/CLOSED sign + usage bars on the wall by the door (DOM overlay, all text via esc()) */
+  #sign { position: absolute; z-index: 1; display: flex; flex-direction: column; gap: 2px; font-size: 7px; line-height: 1.4; }
+  #sign:empty { display: none; }
+  #sign .plate { color: #fff; border: 2px solid #101828; padding: 3px 4px 2px; text-align: center;
+    box-shadow: inset -2px -2px 0 rgba(0, 0, 0, .25); overflow-wrap: anywhere; }
+  #sign .plate.open { background: #3a9a40; }
+  #sign .plate.closed { background: #c03030; }
+  #sign .bars { display: grid; gap: 2px; background: rgba(16, 24, 40, .88); border: 2px solid #101828; padding: 2px 3px; }
+  #sign .bar { display: grid; grid-template-columns: 3.4em 1fr auto; align-items: center; gap: 4px; color: #e8e8f0; font-size: 6px; }
+  #sign .bar i { display: block; height: 5px; background: #383850; border: 1px solid #000; }
+  #sign .bar b { display: block; height: 100%; background: #48c058; }
+  #sign .bar b.mid { background: #e8a000; }
+  #sign .bar b.hi { background: #e84838; }
+  #sign .bar .v { color: #f8d030; }
+  #sign .bar.none .v { color: #9090a0; }
+  @media (max-width: 700px) {
+    #sign { font-size: 6px; } #sign .plate { padding: 2px 3px 1px; } #sign .bar { font-size: 5px; }
+    .tag { white-space: normal; width: max-content; max-width: 115%; text-align: center; line-height: 1.5; }
+  }
+  @media (max-width: 400px) { h1 { font-size: 12px; } }
+  .spot.cab { background: none; border: 0; padding: 0; font: inherit; }
+  .spot.cab:focus-visible { outline: 3px solid #f8d030; outline-offset: 1px; }
+  .card.legendcard { font-family: 'Pixelify Sans', ui-monospace, monospace; font-weight: 600; }
+  .legend { font-size: 14px !important; line-height: 2 !important; }
+  .legend li { display: flex; align-items: center; gap: 10px; }
+  .legend i { width: 18px; height: 12px; border: 2px solid var(--ink); flex: none; }
+  .lnote { font-size: 12px; margin: 10px 0 0; color: #806030; }
+  #tstats { max-width: 960px; margin: 14px auto 0; background: var(--panel); color: var(--ink); border: 4px solid var(--ink);
+    box-shadow: inset 0 0 0 3px #d8d0b0; padding: 10px 12px; font-size: 8px; line-height: 2; }
+  #tstats b { color: var(--accent); font-weight: normal; }
+  #tstats .t { color: var(--muted); }
+  #tstats:empty, body.public #tstats { display: none; }
+  @media (min-width: 1100px) { #tstats { max-width: 1600px; } }
+  /* Public view (signed out / not the owner): no feed, no rankings */
+  body.public #feed, body.public #boardBtn { display: none; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 20; display: none;
+    font-size: 8px; line-height: 1.6; color: var(--ink); background: var(--panel); border: 3px solid var(--ink); padding: 8px 10px; }
+  #toast.show { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>AGENT HQ</h1>
+    <div class="meta" id="meta">Connecting…</div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="authBtn" style="display:none">SIGN IN</button>
+    <button class="btn" id="alumniBtn" style="display:none">ALUMNI</button>
+    <button class="btn" id="boardBtn">★ RANKINGS</button>
+  </div>
+</header>
+<div id="rooms">
+  <div id="room"><canvas id="cv"></canvas><div id="sign"></div></div>
+  <div id="library"></div>
+</div>
+<div id="tstats"></div>
+<div id="feed">Waiting for activity…</div>
+<div id="modal"><div class="card" id="card"></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const T = 16;                                   // tile size (px)
+const SLOT_W = 4, SLOT_H = 4, TOP = 7;          // desk slot size in tiles, rows before worker area
+const POLL_MS = 3000;
+const UNIFORM = { worker: '#e8a838', scout: '#d03838', builder: '#d87818', runner: '#d860a8', archivist: '#3878d0', security: '#403868', planner: '#e0e0e8', reviewer: '#40a0a0',
+                  'glm-worker': '#6a68c8', Explore: '#38a868', Plan: '#7848c0', 'general-purpose': '#607080' };
+// Skill caps: a coloured cap per skill (owner: agent.skill, public: agent.cap). No cap when null/empty.
+const CAPS = { survey: '#3878e0', build: '#f08020', verify: '#38b048', security: '#8048c0', record: '#20a8a0', chores: '#f0d030', runbook: '#d83030' };
+const capOf = (v) => (typeof v === 'string' && Object.prototype.hasOwnProperty.call(CAPS, v) ? v : '');
+// GLM provider cap: violet, outside the seven skill-cap colours, so a GLM desk reads as a different provider.
+const GLM_COLOR = '#8a58f8';
+// v2 trainer types retired in v3: shown as Alumni (stats intact), never as active desks.
+const RETIRED = new Set(['scout', 'builder', 'runner', 'archivist', 'security', 'planner']);
+const HAIR = ['#302020', '#604020', '#a05828', '#e8c050', '#383868', '#b03030', '#284828', '#808090', '#e87898'];
+const SKIN = ['#f8c8a0', '#e8b088', '#c88858', '#f0d0b0'];
+const OUT = '#282830';
+
+// Agent type -> role label shown to the owner (plan 3.1). Unknown types fall back to Title Case.
+const ROLE = { worker: 'Worker', scout: 'Scout', builder: 'Developer', runner: 'Runner', archivist: 'Archivist', security: 'Security',
+               planner: 'Planner', reviewer: 'Reviewer', 'glm-worker': 'GLM Worker', Explore: 'Explorer', Plan: 'Architect', 'general-purpose': 'Generalist',
+               claude: 'Assistant', 'statusline-setup': 'Setup', orchestrator: 'Orchestrator' };
+
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const room = document.getElementById('room'), signEl = document.getElementById('sign');
+let state = null, events = [], tick = 0, perRow = 3, lastKey = '', lastVw = 0;
+let extra = { projects: [], library: null, limits: null, glm: null, tasks: null };   // projects.json / library.json / limits.json / glm.json
+// Public view: data comes from /public (or the local ?view=public fixture). Only names, roles, status,
+// levels, OPEN/CLOSED and book titles exist there; nothing else is shown.
+let publicMode = false;
+
+const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+const looks = (a) => {
+  const h = hash(a.name);
+  const cap = capOf(a.skill) || capOf(a.cap);
+  return { cap: cap ? CAPS[cap] : a.type === 'glm-worker' ? GLM_COLOR : '', shirt: UNIFORM[a.type] || '#50a0a0', hair: HAIR[h % HAIR.length], skin: SKIN[(h >> 4) % SKIN.length] };
+};
+const level = (tasks) => 1 + Math.floor(Math.sqrt(tasks * 3));
+const lvOf = (a) => (Number.isFinite(a.level) ? a.level : level(a.stats.tasks));   // /public carries level
+const dur = (ms) => { const m = Math.round(ms / 60000); if (m < 1) return `${Math.max(1, Math.round(ms / 1000))}s`;
+  if (m < 60) return `${m}m`; const h = Math.floor(m / 60); return h < 24 ? `${h}h${m % 60 ? m % 60 + 'm' : ''}` : `${Math.floor(h / 24)}d`; };
+const short = (s, n = 38) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s);
+// Bubbles show task text only: a leading "[slug]" launch prefix is project attribution (the
+// separate project field carries it), so strip it defensively from pre-v2 data. esc() still applies.
+const plain = (s) => String(s || '').replace(/^\s*\[[^\]]{1,40}\]\s*/, '');
+const ago = (ts) => dur(Date.now() - ts) + ' ago';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// role(type) and label(agent) return PLAIN text; callers esc() it like any other data.
+const role = (type) => {
+  const t = String(type ?? '');
+  if (Object.prototype.hasOwnProperty.call(ROLE, t)) return ROLE[t];
+  const words = t.split(/[-_\s]+/).filter(Boolean);
+  return words.length ? words.map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'Trainer';
+};
+const allAgents = () => (state ? state.agents : []);
+const isAlum = (a) => RETIRED.has(a.type);
+const actives = () => allAgents().filter((a) => !isAlum(a));
+const alumni = () => allAgents().filter(isAlum);
+const isBoss = (a) => !!(state && a === state.orchestrator) || (a && a.type === 'orchestrator');
+const label = (a) => (a ? `${a.name ?? ''} (${isBoss(a) ? 'Orchestrator' : role(a.type)})` : '');
+const deskTag = (a) => `${a.name ?? ''} · ${isBoss(a) ? 'Orchestrator' : role(a.type)}`;
+const who = (name) => {                                   // feed: event agent name -> "Name (Role)"
+  if (!state) return String(name ?? '');
+  if (name === state.orchestrator.name) return label(state.orchestrator);
+  const a = allAgents().find((x) => x.name === name);
+  return a ? label(a) : String(name ?? '');
+};
+// Tokens: T = { in, out, cacheRead, cacheWrite } (plan 3.2). Non-numbers count as 0.
+const num = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+const tokTotal = (t) => (t ? num(t.in) + num(t.out) + num(t.cacheRead) + num(t.cacheWrite) : 0);
+const fmtN = (n) => { n = num(n); return n < 1e3 ? String(Math.round(n)) : n < 1e6 ? (n / 1e3).toFixed(n < 1e4 ? 1 : 0) + 'K'
+  : n < 1e9 ? (n / 1e6).toFixed(n < 1e7 ? 1 : 0) + 'M' : (n / 1e9).toFixed(1) + 'B'; };
+const full = (n) => Math.round(num(n)).toLocaleString();
+const asObj = (v) => (v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length ? v : null);
+const asList = (v) => (Array.isArray(v) ? v.filter(Boolean) : v && typeof v === 'object' ? Object.values(v).filter(Boolean) : []);
+
+// ---------- pixel helpers ----------
+function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+function box(x, y, w, h, c) { px(x - 1, y - 1, w + 2, h + 2, OUT); px(x, y, w, h, c); }
+
+function floorTile(tx, ty) {
+  const x = tx * T, y = ty * T, alt = (tx + ty) % 2;
+  px(x, y, T, T, alt ? '#e8d8b0' : '#e0cea0');
+  px(x, y + T - 1, T, 1, '#cbb888'); px(x + T - 1, y, 1, T, '#cbb888');
+}
+function wall(cols) {
+  for (let tx = 0; tx < cols; tx++) {
+    px(tx * T, 0, T, T * 2, '#f0e8c8');
+    px(tx * T, 0, T, 3, '#786048');
+    px(tx * T, T * 2 - 5, T, 5, '#a07850'); px(tx * T, T * 2 - 5, T, 1, '#c09868');
+    px(tx * T + T - 1, 3, 1, T * 2 - 8, '#e4dab8');
+  }
+}
+function windowAt(tx) {
+  const x = tx * T + 2, y = 6;
+  box(x, y, 28, 16, '#a8d8f8'); px(x + 13, y, 2, 16, '#f8f8f8'); px(x, y + 7, 28, 2, '#f8f8f8');
+  px(x + 2, y + 2, 4, 2, '#e0f4ff');
+}
+function shelf(tx) {
+  const x = tx * T + 1, y = 4; box(x, y, 30, 26, '#8a5a30');
+  const books = ['#c83030', '#3060c0', '#30a050', '#e0b030', '#8040a0', '#e07030'];
+  for (let r = 0; r < 3; r++) {
+    px(x, y + 8 * r + 7, 30, 1, '#5a3818');
+    for (let b = 0; b < 7; b++) px(x + 2 + b * 4, y + 8 * r + 1, 3, 6, books[(b + r * 2) % books.length]);
+  }
+}
+function door(x, open) {                        // x = left edge (px) on the top wall
+  const y = 5;
+  box(x, y, 22, 27, '#5a3818'); px(x + 2, y + 2, 18, 25, open ? '#b07840' : '#7a4a20');
+  px(x + 4, y + 4, 14, 8, open ? '#f8e8a0' : '#405060'); px(x + 10, y + 4, 2, 8, '#5a3818');
+  px(x + 4, y + 15, 14, 1, 'rgba(0,0,0,.2)'); px(x + 15, y + 16, 2, 2, '#f8d030');
+}
+function plant(x, y) {
+  box(x + 4, y + 9, 8, 6, '#c06030'); px(x + 4, y + 9, 8, 2, '#e08048');
+  box(x + 2, y + 1, 12, 8, '#3a9a40'); px(x + 4, y + 2, 4, 3, '#58c058'); px(x + 9, y + 4, 3, 2, '#58c058');
+}
+function rug(tx, ty, w, h) {
+  const x = tx * T, y = ty * T;
+  px(x, y, w * T, h * T, '#c04848'); px(x + 3, y + 3, w * T - 6, h * T - 6, '#d86858');
+  px(x + 6, y + 6, w * T - 12, h * T - 12, '#c04848');
+}
+function desk(x, y, w) {                        // x,y = top-left of desk top surface (px)
+  box(x, y, w, 10, '#b07838'); px(x, y, w, 2, '#d09858'); px(x, y + 10, w, 5, '#7a4a20');
+  px(x - 1, y + 15, w + 2, 1, OUT); px(x, y + 15, w, 2, 'rgba(0,0,0,.15)');
+}
+function monitor(x, y, on) {                    // back of monitor, glow spills on desk when working
+  box(x, y - 9, 12, 9, '#68707a'); px(x + 1, y - 8, 10, 1, '#88909a'); px(x + 4, y, 4, 2, '#50565e');
+  if (on) { px(x - 2, y - 9, 1, 9, (tick % 4) ? '#a8f0ff' : '#78d0f0'); px(x + 2, y + 2, 8, 1, '#c8f0ff'); }
+}
+function cabinet(x, y) {                        // cap cabinet: wardrobe showing the 7 caps
+  box(x, y, 16, 22, '#8a5a30'); px(x + 1, y + 1, 14, 20, '#a67440'); px(x + 7, y + 1, 2, 20, '#5a3818');
+  px(x + 2, y + 2, 12, 15, '#2a2030');
+  const cols = Object.values(CAPS);
+  cols.forEach((c, i) => { const r = i < 3 ? 0 : i < 5 ? 1 : 2, k = i < 3 ? i : i < 5 ? i - 3 : i - 5;
+    px(x + 3 + k * 4 + (r ? 2 : 0), y + 3 + r * 5, 3, 3, c); px(x + 3 + k * 4 + (r ? 2 : 0), y + 3 + r * 5, 3, 1, 'rgba(255,255,255,.35)'); });
+  px(x + 5, y + 18, 2, 2, '#f8d030'); px(x + 9, y + 18, 2, 2, '#f8d030');
+}
+function chair(cx, top) { box(cx - 8, top, 16, 12, '#4a5a90'); px(cx - 7, top + 1, 14, 2, '#6a7ab0'); }
+
+// Desk polish: reduced motion freezes z's and typing (mt = 0 and fixed hand phase).
+const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const ZG = { z: ['111', '001', '010', '100', '111'], Z: ['11111', '00010', '00100', '01000', '11111'] };
+function glyph(g, x, y, c) { g.forEach((row, r) => { for (let k = 0; k < row.length; k++) if (row[k] === '1') px(x + k, y + r, 1, 1, c); }); }
+function zzz(cx, deskY, seed) {                 // three staggered "z z Z", each on an 8-tick (2 s) loop
+  const mt = REDUCED ? 0 : tick;
+  [['z', 0], ['z', 3], ['Z', 6]].forEach(([ch, off], k) => {
+    const f = REDUCED ? k * 0.3 : ((mt + off + seed) % 8) / 8;
+    const a = REDUCED ? 0.9 : 1 - f;
+    if (a < 0.15) return;
+    glyph(ZG[ch], Math.round(cx + 6 + f * 6 + k * 2), Math.round(deskY - 16 - f * 9), 'rgba(232,240,255,' + a.toFixed(2) + ')');
+  });
+}
+function keyboard(cx, deskY, phase) {
+  box(cx - 7, deskY + 5, 14, 3, '#3a3f4a');
+  for (let k = 0; k < 6; k++) px(cx - 6 + k * 2, deskY + 6, 1, 1, '#aab0bc');
+  px(cx - 6, deskY + 7, 12, 1, '#6a7080');
+  const mt = REDUCED ? 0 : tick;
+  if ((mt + phase) % 5 === 0 && !REDUCED) px(cx - 6 + ((mt * 3 + phase) % 6) * 2, deskY + 6, 1, 1, '#f8f060');   // key flash
+}
+
+function character(cx, deskY, look, working, phase, asleep) {
+  if (working) {
+    chair(cx, deskY - 22);
+    box(cx - 6, deskY - 10, 12, 10, look.shirt);                         // torso
+    px(cx - 6, deskY - 10, 12, 2, 'rgba(255,255,255,.25)');
+    box(cx - 5, deskY - 20, 10, 10, look.skin);                         // head
+    px(cx - 5, deskY - 20, 10, 4, look.hair); px(cx - 5, deskY - 16, 2, 3, look.hair); px(cx + 3, deskY - 16, 2, 3, look.hair);
+    px(cx - 3, deskY - 14, 1, 2, OUT); px(cx + 2, deskY - 14, 1, 2, OUT);   // eyes
+    if (tick % 8 === 0) { px(cx - 3, deskY - 14, 1, 2, look.skin); px(cx + 2, deskY - 14, 1, 2, look.skin); px(cx - 3, deskY - 13, 1, 1, OUT); px(cx + 2, deskY - 13, 1, 1, OUT); }
+    px(cx - 1, deskY - 12, 2, 1, '#c87060');                            // mouth
+    if (look.cap) { box(cx - 5, deskY - 23, 10, 4, look.cap); px(cx - 5, deskY - 23, 10, 1, 'rgba(255,255,255,.35)'); px(cx - 7, deskY - 20, 5, 1, OUT); }
+  } else {
+    const b = asleep && !REDUCED && tick % 12 >= 6 ? 1 : 0;           // 1 px breathing bob, 3 s loop
+    chair(cx, deskY - 16);
+    box(cx - 6, deskY - 7 + b, 12, 7, look.shirt);
+    box(cx - 5, deskY - 6 + b, 10, 7, look.hair);                      // head down, back of head
+    px(cx - 3, deskY - 5 + b, 3, 1, 'rgba(255,255,255,.3)');
+    if (look.cap) { box(cx - 5, deskY - 9 + b, 10, 4, look.cap); px(cx - 5, deskY - 9 + b, 10, 1, 'rgba(255,255,255,.35)'); }
+    if (asleep) { px(cx - 9, deskY - 17, 18, 17, 'rgba(0,0,0,.2)'); }   // ~80% brightness
+  }
+  return () => {                                                        // hands drawn after the desk
+    if (working) {
+      keyboard(cx, deskY, phase);
+      const ph = REDUCED ? 0 : phase, l = ph % 2 ? 0 : 1, r = ph % 2 ? 1 : 0;
+      box(cx - 8, deskY + 2 - l, 4, 3, look.skin); box(cx + 4, deskY + 2 - r, 4, 3, look.skin);
+    } else {
+      box(cx - 9, deskY + 1, 18, 4, look.shirt); px(cx - 5, deskY + 1, 10, 2, look.hair);
+      if (asleep) { px(cx - 10, deskY, 20, 6, 'rgba(0,0,0,.2)'); zzz(cx, deskY, phase); }
+    }
+  };
+}
+
+// ---------- layout ----------
+function layout() {
+  const n = state ? actives().length : 4;
+  const avail = window.innerWidth - 32;           // >= 1100px: office takes ~65%, the library at most 35%
+  const vw = Math.min(window.innerWidth >= 1100 ? Math.floor((avail - 14) * 0.65) : avail, 960);
+  perRow = vw < 420 ? 2 : vw < 700 ? 3 : 4;
+  const cols = perRow * SLOT_W + 2, rows = Math.max(1, Math.ceil(n / perRow));
+  const W = cols * T, doorX = (cols - 3) * T + 3, signW = Math.round(W * 0.42);
+  return { cols, rows, W, H: (TOP + rows * SLOT_H + 1) * T, vw, doorX, signW, signL: doorX - 3 - signW };
+}
+const CAB = { x: 15, y: 2 * T + 2, w: 16, h: 22 };
+function slotOf(i) {
+  const tx = 1 + (i % perRow) * SLOT_W, ty = TOP + Math.floor(i / perRow) * SLOT_H;
+  return { tx, ty, cx: tx * T + 26, deskY: ty * T + 26 };
+}
+
+function draw() {
+  if (!state) return;
+  const L = layout();
+  if (cv.width !== L.W || cv.height !== L.H || lastVw !== L.vw) {
+    cv.width = L.W; cv.height = L.H; lastVw = L.vw;
+    const scale = L.vw / L.W >= 2 ? Math.floor(L.vw / L.W) : L.vw / L.W;
+    room.style.width = L.W * scale + 'px'; room.style.height = L.H * scale + 'px';
+    Object.assign(signEl.style, { left: (L.signL / L.W * 100) + '%', top: (4 / L.H * 100) + '%', width: (L.signW / L.W * 100) + '%' });
+    lastKey = '';
+  }
+  const rows = L.H / T;
+  for (let ty = 2; ty < rows; ty++) for (let tx = 0; tx < L.cols; tx++) floorTile(tx, ty);
+  wall(L.cols);
+  shelf(1);
+  for (let tx = 4; tx * T + 32 <= L.signL - 2; tx += 5) windowAt(tx);   // windows only where the sign isn't
+  door(L.doorX, !state.sign || state.sign.open !== false);
+  plant(L.cols * T - 18, 2 * T + 2); plant(2, 2 * T + 2); plant(2, (rows - 2) * T); plant(L.cols * T - 18, (rows - 2) * T);
+  rug(Math.floor(L.cols / 2) - 3, 2, 6, 4);
+  px(Math.floor(L.cols / 2) * T - 12, (rows - 1) * T + 6, 24, 10, '#7a6a58');            // doormat
+
+  // boss desk
+  const o = state.orchestrator, bcx = Math.floor(L.cols / 2) * T, bdy = 4 * T + 4;
+  const bossLook = { shirt: '#f8f8f8', hair: '#a8a8b0', skin: '#f0c8a0' };
+  const bossHands = character(bcx, bdy, bossLook, o.status === 'working', tick, o.status === 'sleeping');
+  desk(bcx - 30, bdy, 60); monitor(bcx + 14, bdy + 3, o.status === 'working'); bossHands();
+  box(bcx - 26, bdy + 3, 8, 5, '#f8f8f8'); px(bcx - 25, bdy + 4, 6, 1, '#b0b0c0');        // papers
+  box(bcx - 18, bdy + 2, 4, 5, '#e05030');                                                // mug
+
+  actives().forEach((a, i) => {
+    const s = slotOf(i), work = a.status === 'working';
+    const hands = character(s.cx, s.deskY, looks(a), work, tick + i, a.status === 'sleeping');
+    desk(s.tx * T + 6, s.deskY, 44); monitor(s.tx * T + 38, s.deskY + 3, work); hands();
+  });
+  cabinet(CAB.x, CAB.y);
+  overlays(L);
+}
+
+function overlays(L) {
+  const key = JSON.stringify([L.W, L.H, state.orchestrator.status, state.orchestrator.task,
+    actives().map((a) => [a.name, a.type, a.status, a.task, a.stats.tasks, a.skill, a.cap])]);
+  if (key === lastKey) return; lastKey = key;
+  room.querySelectorAll('.spot').forEach((e) => e.remove());
+  const pct = (v, total) => (v / total * 100) + '%';
+  const spot = (x, y, w, h, who, html) => {
+    const d = document.createElement('div'); d.className = 'spot';
+    Object.assign(d.style, { left: pct(x, L.W), top: pct(y, L.H), width: pct(w, L.W), height: pct(h, L.H) });
+    d.innerHTML = html; d.onclick = () => openCard(who); room.appendChild(d);
+  };
+  const o = state.orchestrator, bcx = Math.floor(L.cols / 2) * T;
+  spot(bcx - 32, 2 * T + 18, 64, 2 * T + 6, 'boss',
+    (o.status === 'working' ? `<div class="bubble">${publicMode ? 'thinking…' : esc(short(plain(o.task)))}</div>` : o.status === 'sleeping' ? '' : '<div class="zzz">Zz</div>') +
+    `<div class="tag boss">${esc(deskTag(o))}</div>`);
+  const cb = document.createElement('button'); cb.type = 'button'; cb.className = 'spot cab';
+  cb.setAttribute('aria-label', 'Cap cabinet: open the skill cap legend');
+  Object.assign(cb.style, { left: pct(CAB.x, L.W), top: pct(CAB.y, L.H), width: pct(CAB.w, L.W), height: pct(CAB.h, L.H) });
+  cb.onclick = openLegend; room.appendChild(cb);
+  actives().forEach((a, i) => {
+    const s = slotOf(i);
+    spot(s.tx * T, s.ty * T + 2, SLOT_W * T, 43, a.id,
+      (a.status === 'working' ? `<div class="bubble">${publicMode ? 'working…' : esc(short(plain(a.task)))}</div>` : a.status === 'sleeping' ? '' : '<div class="zzz">Zz</div>') +
+      `<div class="tag">${esc(deskTag(a))}<span class="lv">L${esc(lvOf(a))}</span></div>`);
+  });
+}
+
+// ---------- cards ----------
+function portrait(c, look, boss) {
+  const g = c.getContext('2d'); c.width = 24; c.height = 24;
+  const p = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  p(5, 15, 14, 9, OUT); p(6, 16, 12, 8, look.shirt);
+  p(6, 3, 12, 13, OUT); p(7, 4, 10, 11, look.skin); p(7, 4, 10, 4, look.hair);
+  p(7, 8, 2, 3, look.hair); p(15, 8, 2, 3, look.hair);
+  p(9, 9, 1, 2, OUT); p(14, 9, 1, 2, OUT); p(11, 12, 2, 1, '#c87060');
+  if (look.cap) { p(6, 1, 12, 4, OUT); p(7, 2, 10, 3, look.cap); }
+  if (boss) { p(6, 16, 4, 8, '#f8f8f8'); p(14, 16, 4, 8, '#f8f8f8'); p(10, 16, 4, 8, '#5878a8'); }
+}
+function stars(a) {
+  const t = a.stats.tasks; if (!t) return '☆☆☆☆☆';
+  const rate = Math.max(0, (t - a.stats.fails) / t), n = Math.max(1, Math.min(5, Math.round(rate * 3 + Math.min(2, t / 10))));
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+function tokensBlock(t, turns) {                 // card TOKENS section (total, in/out, cache read/write)
+  if (!t || !tokTotal(t)) return '<h3>TOKENS</h3><ul><li>No token data yet</li></ul>';
+  return `<h3>TOKENS</h3><dl>
+        <dt>TOTAL</dt><dd>${esc(fmtN(tokTotal(t)))}</dd>
+        <dt>IN</dt><dd>${esc(full(t.in))}</dd>
+        <dt>OUT</dt><dd>${esc(full(t.out))}</dd>
+        <dt>CACHE READ</dt><dd>${esc(full(t.cacheRead))}</dd>
+        <dt>CACHE WRITE</dt><dd>${esc(full(t.cacheWrite))}</dd>
+        ${turns != null ? `<dt>TURNS</dt><dd>${esc(full(turns))}</dd>` : ''}</dl>`;
+}
+function openCard(who) {
+  const card = document.getElementById('card'); card.className = 'card';
+  if (publicMode) { openPublicCard(card, who); return; }
+  if (who === 'boss') {
+    const o = state.orchestrator;
+    const working = actives().filter((a) => a.status === 'working').length;
+    card.innerHTML = `<button class="btn close" onclick="closeCard()">X</button>
+      <h2><span>${esc(label(o))}</span></h2>
+      <div class="row"><canvas id="pc"></canvas><dl>
+        <dt>ROLE</dt><dd>Orchestrator</dd>
+        <dt>STATUS</dt><dd>${o.status === 'working' ? 'Working' : 'Asleep'} · ${dur(Date.now() - o.since)}</dd>
+        <dt>REQUESTS</dt><dd>${esc(o.stats.prompts)}</dd>
+        <dt>DESK TIME</dt><dd>${dur(o.stats.workMs)}</dd>
+        <dt>STAFF</dt><dd>${actives().length}</dd>
+        <dt>ON DUTY</dt><dd>${working}</dd></dl></div>
+      ${o.status === 'working' ? `<h3>NOW</h3><ul><li>${esc(o.task)}</li></ul>` : ''}
+      ${tokensBlock(o.tokens, o.tokens ? o.tokens.turns : null)}`;
+    portrait(document.getElementById('pc'), { shirt: '#f8f8f8', hair: '#a8a8b0', skin: '#f0c8a0' }, true);
+  } else {
+    const a = allAgents().find((x) => x.id === who); if (!a) return;
+    const t = a.stats.tasks, lv = level(t), next = Math.ceil((lv * lv) / 3), prev = Math.ceil(((lv - 1) ** 2) / 3);
+    const xp = next > prev ? Math.min(100, (t - prev) / (next - prev) * 100) : 0;
+    const rate = t ? Math.round((t - a.stats.fails) / t * 100) + '%' : '—';
+    card.innerHTML = `<button class="btn close" onclick="closeCard()">X</button>
+      <h2><span>${esc(label(a))}</span><span>Lv${lv}</span></h2>
+      <div class="xp"><i style="width:${xp}%"></i></div>
+      <div class="row"><canvas id="pc"></canvas><dl>
+        <dt>ROLE</dt><dd>${esc(role(a.type))}</dd>
+        <dt>ID NO.</dt><dd>${esc(a.id.toUpperCase())}</dd>
+        <dt>HIRED</dt><dd>${new Date(a.hiredAt).toLocaleDateString()}</dd>
+        <dt>RATING</dt><dd class="stars">${stars(a)}</dd></dl></div>
+      <dl>
+        <dt>STATUS</dt><dd>${a.status === 'working' ? 'Working · ' + dur(Date.now() - a.since) : 'Asleep'}</dd>
+        <dt>TASKS DONE</dt><dd>${esc(t)}</dd>
+        <dt>DESK TIME</dt><dd>${dur(a.stats.workMs)}</dd>
+        <dt>AVG TASK</dt><dd>${t ? dur(a.stats.workMs / t) : '—'}</dd>
+        <dt>MISSES</dt><dd>${esc(a.stats.fails)}</dd>
+        <dt>SUCCESS</dt><dd>${rate}</dd></dl>
+      ${a.status === 'working' ? `<h3>NOW</h3><ul><li>${esc(a.task)}</li></ul>` : ''}
+      ${tokensBlock(a.tokens)}
+      <h3>RECENT TASKS</h3><ul>${(a.history || []).slice(0, 5).map((h) =>
+        `<li>${esc(h.task)} <span>· ${dur(h.end - h.start)} · ${ago(h.end)}${tokTotal(h.tokens) ? ` · ${esc(fmtN(tokTotal(h.tokens)))} tok` : ''}</span></li>`).join('') || '<li>None yet</li>'}</ul>
+      ${(a.misses || []).length ? `<h3>MISSES</h3><ul>${a.misses.slice(0, 5).map((m) =>
+        `<li>${esc(m.reason)} <span>· ${ago(m.ts)}</span></li>`).join('')}</ul>` : ''}`;
+    portrait(document.getElementById('pc'), looks(a));
+  }
+  document.getElementById('modal').classList.add('open');
+}
+function openPublicCard(card, who) {            // public view: name, role and level only
+  const boss = who === 'boss', a = boss ? state.orchestrator : allAgents().find((x) => x.id === who);
+  if (!a) return;
+  card.innerHTML = `<button class="btn close" onclick="closeCard()">X</button>
+    <h2><span>${esc(a.name)}</span>${boss ? '' : `<span>Lv${esc(lvOf(a))}</span>`}</h2>
+    <div class="row"><canvas id="pc"></canvas><dl>
+      <dt>ROLE</dt><dd>${esc(boss ? 'Orchestrator' : role(a.type))}</dd>
+      <dt>STATUS</dt><dd>${a.status === 'working' ? 'Working' : a.status === 'idle' ? 'Idle' : 'Asleep'}</dd>
+      ${boss ? '' : `<dt>LEVEL</dt><dd>${esc(lvOf(a))}</dd>`}</dl></div>`;
+  portrait(document.getElementById('pc'), boss ? { shirt: '#f8f8f8', hair: '#a8a8b0', skin: '#f0c8a0' } : looks(a), boss);
+  document.getElementById('modal').classList.add('open');
+}
+function openBoard() {
+  const ranked = [...actives()].sort((a, b) => (b.stats.tasks - b.stats.fails * 2) - (a.stats.tasks - a.stats.fails * 2) || b.stats.workMs - a.stats.workMs);
+  const top = ranked[0];
+  // TOKENS BY ROLE: tasks and tokens summed per role, plus the orchestrator (tasks = requests).
+  const byRole = {};
+  allAgents().forEach((a) => {
+    const r = role(a.type), row = byRole[r] || (byRole[r] = { role: r, tasks: 0, total: 0 });
+    row.tasks += num(a.stats.tasks); row.total += tokTotal(a.tokens);
+  });
+  const o = state.orchestrator;
+  const roleRows = Object.values(byRole).sort((a, b) => b.total - a.total || b.tasks - a.tasks);
+  roleRows.push({ role: 'Orchestrator', tasks: num(o.stats && o.stats.prompts), total: tokTotal(o.tokens) });
+  const tr = (r) => `<tr><td>${esc(r.role)}</td><td>${esc(full(r.tasks))}</td><td>${esc(fmtN(r.total))}</td>` +
+    `<td>${r.tasks && r.total ? esc(fmtN(r.total / r.tasks)) : '—'}</td></tr>`;
+  const card = document.getElementById('card'); card.className = 'card';
+  card.innerHTML = `<button class="btn close" onclick="closeCard()">X</button>
+    <h2><span>RANKINGS</span></h2>
+    ${top && top.stats.tasks ? `<h3>★ EMPLOYEE OF THE MONTH: ${esc(label(top))}</h3>` : ''}
+    <ul>${ranked.map((a, i) => `<li data-id="${esc(a.id)}" onclick="openCard(this.dataset.id)" style="cursor:pointer">${i + 1}. ${esc(label(a))}
+      <span>· Lv${level(a.stats.tasks)} · ${esc(a.stats.tasks)} done · ${esc(a.stats.fails)} miss · ${dur(a.stats.workMs)}${tokTotal(a.tokens) ? ` · ${esc(fmtN(tokTotal(a.tokens)))} tok` : ''}</span>
+      <span class="stars">${stars(a)}</span></li>`).join('')}</ul>
+    ${alumniList()}
+    <h3>TOKENS BY ROLE</h3>
+    <table><thead><tr><th>ROLE</th><th>TASKS</th><th>TOTAL</th><th>AVG/TASK</th></tr></thead>
+      <tbody>${roleRows.map(tr).join('')}</tbody></table>`;
+  document.getElementById('modal').classList.add('open');
+}
+function alumniList() {                          // Alumni group: retired v2 types, stats intact
+  const al = alumni().sort((a, b) => num(b.stats.tasks) - num(a.stats.tasks));
+  if (!al.length) return '';
+  return `<h3>ALUMNI</h3><ul>${al.map((a) => `<li${publicMode ? '' : ` data-id="${esc(a.id)}" onclick="openCard(this.dataset.id)" style="cursor:pointer"`}>${esc(label(a))}
+      <span>· Lv${esc(lvOf(a))} · ${esc(num(a.stats.tasks))} done${publicMode ? '' : ` · ${esc(num(a.stats.fails))} miss · ${dur(num(a.stats.workMs))}${tokTotal(a.tokens) ? ` · ${esc(fmtN(tokTotal(a.tokens)))} tok` : ''}`}</span></li>`).join('')}</ul>`;
+}
+function openAlumni() {
+  if (!state) return;
+  const card = document.getElementById('card'); card.className = 'card';
+  card.innerHTML = `<button class="btn close" onclick="closeCard()">X</button><h2><span>ALUMNI</span></h2>${alumniList() || '<ul><li>No alumni</li></ul>'}`;
+  document.getElementById('modal').classList.add('open');
+}
+function openLegend() {
+  const rows = Object.entries(CAPS).map(([k, c]) => `<li><i style="background:${c}"></i>${esc(k[0].toUpperCase() + k.slice(1))}</li>`).join('') +
+    `<li><i style="background:${GLM_COLOR}"></i>GLM Worker (provider)</li>`;
+  openModal(`<button class="btn close" onclick="closeCard()">X</button><h2><span>CAP CABINET</span></h2>
+    <ul class="legend">${rows}</ul><p class="lnote">A cap shows the skill a trainer is using; the violet cap marks a GLM worker. No cap means idle.</p>`, 'legendcard');
+}
+function closeCard() { document.getElementById('modal').classList.remove('open'); }
+// Generic modal for library.js (the book spread). `cls` is a code-supplied class name, not data.
+function openModal(html, cls) {
+  const card = document.getElementById('card');
+  card.className = 'card' + (cls ? ' ' + String(cls).replace(/[^\w -]/g, '') : '');
+  card.innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') closeCard(); };
+document.getElementById('alumniBtn').onclick = openAlumni;
+document.getElementById('boardBtn').onclick = () => state && !publicMode && openBoard();
+
+// ---------- data ----------
+// Both sources feed apply(state, events, more): `events` is an array of event objects, oldest first;
+// `more` = { projects (array of projects.json entries), library (library.json), limits (limits.json) }.
+function apply(s, ev, more) {
+  state = s; events = ev || [];
+  const m = more || {};
+  extra = { projects: asList(m.projects), library: asObj(m.library), limits: asObj(m.limits), glm: publicMode ? null : asObj(m.glm), tasks: publicMode ? null : asObj(m.tasks) };
+  renderMeta(); renderTasks(); renderSign(); draw(); feedLibrary();
+}
+function feedLibrary() {
+  HQ.data = { state, events, projects: extra.projects, library: extra.library, limits: extra.limits, glm: extra.glm, public: publicMode };
+  try { if (window.Library && typeof Library.update === 'function') Library.update(HQ.data); }
+  catch (e) { console.error('library update failed', e); }   // a library bug must not break the office
+}
+
+// ---------- task metrics (owner and local only; never in public mode) ----------
+// Tokens per task = sum of the token kinds that are numbers; null when none is reported (shown "n/a", never 0).
+const taskTok = (t) => { const k = t && t.tokens ? ['in', 'out', 'cacheRead', 'cacheWrite'].map((x) => t.tokens[x]).filter((v) => typeof v === 'number' && Number.isFinite(v)) : [];
+  return k.length ? k.reduce((a, b) => a + b, 0) : null; };
+const tokOrNA = (v) => (v == null ? 'n/a' : fmtN(v));
+function renderTasks() {
+  const el = document.getElementById('tstats');
+  if (publicMode || !state) { el.innerHTML = ''; return; }
+  const list = extra.tasks ? asList(extra.tasks.tasks).filter((t) => asObj(t)) : null;
+  if (!list) { el.innerHTML = '<span class="t">Task metrics: no data yet</span>'; return; }
+  const done = list.filter((t) => Number.isFinite(Number(t.endedAt)) && Number(t.endedAt) > 0);
+  const week = Date.now() - 7 * 864e5;
+  const vals = done.filter((t) => Number(t.endedAt) >= week).map(taskTok).filter((v) => v != null).sort((a, b) => a - b);
+  const mid = vals.length ? (vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2) : null;
+  const last = [...done].sort((a, b) => Number(b.endedAt) - Number(a.endedAt)).slice(0, 5);
+  el.innerHTML = `<div><b>TOKENS PER TASK</b> · 7-day median: ${esc(tokOrNA(mid))} <span class="t">(${vals.length} of ${done.length} tasks reported)</span></div>` +
+    (last.length ? last.map((t) => `<div><span class="t">${esc(ago(Number(t.endedAt)))}</span> ${esc(t.agent ?? 'n/a')} <span class="t">[${esc(t.project ?? 'n/a')}]</span> ${esc(tokOrNA(taskTok(t)))} tok</div>`).join('')
+      : '<div class="t">No completed tasks yet</div>');
+}
+// ---------- OPEN/CLOSED sign + usage bars ----------
+const when = (ms) => { const d = new Date(ms);
+  return `${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}, ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}`; };
+const dayKey = (d, utc) => utc ? d.toISOString().slice(0, 10)
+  : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function bar(k, pct, value, title) {
+  const cls = pct == null ? '' : pct >= 80 ? 'hi' : pct >= 50 ? 'mid' : '';
+  return `<div class="bar${pct == null ? ' none' : ''}" title="${esc(title)}"><span class="k">${esc(k)}</span>` +
+    `<i><b class="${cls}" style="width:${pct == null ? 0 : pct.toFixed(1)}%"></b></i><span class="v">${esc(value)}</span></div>`;
+}
+function limitBar(k, name, w) {
+  const used = w && w.usedPct != null && w.usedPct !== '' ? Number(w.usedPct) : NaN;
+  if (!Number.isFinite(used)) return bar(k, null, 'no data', `Claude ${name}: no data`);
+  const reset = Number(w.resetsAt), hasReset = Number.isFinite(reset) && reset > 0;
+  const p = hasReset && Date.now() >= reset ? 0 : Math.max(0, Math.min(100, used));   // window already reset
+  return bar(k, p, `${Math.round(p)}%`, `Claude ${name}: ${Math.round(p)}% used${hasReset ? ` · resets ${when(reset)}` : ''}`);
+}
+// ---------- GLM plan quota (glm.json / v.glm; owner and local only) ----------
+const GLM_FRESH_MS = 60 * 60000;
+const GLM_ERR = new Set(['unauthorized', 'quota', 'network', 'shape']);
+const pctOf = (w) => (w && w.usedPct != null && w.usedPct !== '' && Number.isFinite(Number(w.usedPct)) ? Math.max(0, Math.min(100, Number(w.usedPct))) : null);
+// Usable only when source is 'zai', the last good fetch is under an hour old, and a 5h percentage exists.
+function glmQuota() {
+  const g = extra.glm;
+  if (publicMode || !g || g.source !== 'zai') return null;
+  const at = Number(g.fetchedAt);
+  if (!Number.isFinite(at) || at <= 0 || Date.now() - at >= GLM_FRESH_MS) return null;
+  const h5 = asObj(g.h5) || { usedPct: g.usedPct, resetsAt: g.resetsAt };   // usedPct/resetsAt alias h5 for one release
+  if (pctOf(h5) === null) return null;
+  const models = asList(g.models).filter((m) => m && typeof m.name === 'string').slice(0, 6);
+  return { h5, wk: asObj(g.wk), at, models };
+}
+// Suffix for the old today's-tokens tooltip when Z.ai data exists but is unusable.
+function glmWhy() {
+  const g = extra.glm;
+  if (publicMode || !g) return '';
+  return ` (Z.ai: no data${GLM_ERR.has(g.error) ? ' · ' + g.error : ''})`;
+}
+function glmWindowBar(k, name, w, zai, extraTip) {
+  const used = pctOf(w);
+  if (used === null) return bar(k, null, 'n/a', `${name}: n/a (Z.ai does not report this window)`);
+  const reset = Number(w.resetsAt), hasReset = Number.isFinite(reset) && reset > 0;
+  const p = hasReset && Date.now() >= reset ? 0 : used;                      // window already reset
+  const models = zai.models.length ? ` · models: ${zai.models.map((m) => `${m.name} ${fmtN(m.tokens)}`).join(', ')}` : '';
+  return bar(k, p, `${Math.round(p)}%`, `${name}: ${Math.round(p)}% used${hasReset ? ` · resets ${when(reset)}` : ''} · as of ${when(zai.at)}${extraTip ? ' · ' + extraTip : ''}${models}`);
+}
+function renderSign() {
+  if (!state) { signEl.innerHTML = ''; return; }
+  const s = asObj(state.sign) || {}, lim = extra.limits;
+  if (publicMode) {                                                   // OPEN or CLOSED only
+    const op = s.open !== false;
+    signEl.innerHTML = `<div class="plate ${op ? 'open' : 'closed'}">${op ? 'OPEN' : 'CLOSED'}</div>`;
+    return;
+  }
+  const prov = (p) => (p === 'GLM' ? 'GLM' : 'Claude');                 // only the two known providers are shown
+  let open = s.open !== false, text, title;
+  if (open) {
+    text = `OPEN · running on ${prov(s.provider || (lim && lim.provider))}`;
+    title = s.since ? `Open since ${when(Number(s.since))}` : text;
+  } else {
+    const at = Number(s.reopensAt), raw = typeof s.closedText === 'string' ? s.closedText : '';
+    const m = raw.match(/resets\s+(.+)$/im);
+    text = Number.isFinite(at) && at > 0 ? `CLOSED · back at ${when(at)}`
+      : m ? `CLOSED · back at ${short(m[1].trim(), 48)}` : raw ? `CLOSED · ${short(raw, 48)}` : 'CLOSED';
+    title = `${prov(s.closedProvider || s.provider)} limit reached${raw ? ': ' + raw : ''}`;
+  }
+  const claude = lim && lim.provider !== 'GLM' ? lim : null;           // GLM sessions carry no Claude windows
+  const usage = asObj(state.usage), daily = (usage && asObj(usage.daily)) || {};
+  const days = Object.keys(daily).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().slice(-7);
+  const glm = (k) => num(daily[k] && daily[k].GLM);
+  const now = new Date(), today = daily[dayKey(now)] ? dayKey(now) : dayKey(now, true);
+  const todayN = glm(today), peak = Math.max(0, ...days.map(glm));
+  const zai = glmQuota();
+  // Real plan quota when fresh (GLM 5h + GLM week); otherwise today's local token count, unchanged, plus why.
+  const localTip = !usage ? 'GLM tokens today: no data' : `GLM tokens today: ${full(todayN)} · 7-day peak ${fmtN(peak)}`;
+  const why = glmWhy();
+  const glmBars = zai
+    ? glmWindowBar('G5H', 'GLM 5h', zai.h5, zai) + glmWindowBar('GWK', 'GLM week', zai.wk, zai, `today (local count) ${full(todayN)} tokens`)
+    : !usage ? bar('GLM', null, 'no data', localTip + why)
+    : bar('GLM', peak ? todayN / peak * 100 : 0, fmtN(todayN), localTip + why);
+  signEl.innerHTML = `<div class="plate ${open ? 'open' : 'closed'}" title="${esc(title)}">${esc(text)}</div>
+    <div class="bars">${limitBar('5H', '5h', claude && claude.fiveHour)}${limitBar('WK', 'week', claude && claude.sevenDay)}${glmBars}</div>`;
+}
+function renderMeta() {
+  document.getElementById('alumniBtn').style.display = alumni().length ? '' : 'none';
+  const act = actives(), w = act.filter((a) => a.status === 'working').length;
+  document.getElementById('meta').textContent =
+    `${publicMode ? 'Public view · ' : ''}${w} working · ${act.length - w} asleep · updated ${ago(state.updatedAt)}`;
+  if (publicMode) { setFeed(''); return; }                           // the feed is owner-only
+  const lines = events.slice(-12).reverse().filter(Boolean);
+  const prov = (p) => (p === 'GLM' ? 'GLM' : 'Claude');
+  const proj = (e) => (e.project ? ` <span class="t">[${esc(e.project)}]</span>` : '');
+  const say = (e) => ({
+    hire: `<b>${esc(who(e.agent))}</b> joined the office`,
+    start: `<b>${esc(who(e.agent))}</b> started${proj(e)}: ${esc(e.task)}`,
+    done: `<b>${esc(who(e.agent))}</b> finished in ${dur(e.ms)}${proj(e)}: ${esc(e.task)}`,
+    fail: `<b>${esc(who(e.agent))}</b> missed: ${esc(e.reason)}`,
+    interrupted: `<b>${esc(who(e.agent))}</b> was interrupted: ${esc(e.task)}`,
+    prompt: `<b>${esc(label(state.orchestrator))}</b> got a request: ${esc(e.task)}`,
+    closed: `<b>The office closed</b> (${prov(e.provider)} limit): ${esc(e.reason)}`,
+    open: `<b>The office is open</b> · running on ${prov(e.provider)}`,
+    tokens: `<b>${esc(who(e.agent))}</b> used ${esc(fmtN(e.total))} tokens: ${esc(e.task)}`,
+  }[e.kind] || esc(e.kind));
+  document.getElementById('feed').innerHTML = lines.length
+    ? lines.map((e) => `<div><span class="t">${new Date(e.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> ${say(e)}</div>`).join('')
+    : 'Waiting for activity…';
+}
+const setMeta = (t) => { document.getElementById('meta').textContent = t; };
+const setFeed = (html) => { document.getElementById('feed').innerHTML = html; };
+
+// ---------- source: local (serve.mjs polling) ----------
+const parseJsonl = (txt) => txt.trim().split('\n').filter(Boolean).slice(-12)
+  .map((l) => { try { return JSON.parse(l); } catch { return null; } });
+// Optional files: a 404, `{}` or bad JSON just means "no data yet".
+const optJson = (url) => fetch(url, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+async function poll() {
+  try {
+    const [s, ev, projects, library, limits, tasks, glm] = await Promise.all([
+      fetch('state.json', { cache: 'no-store' }).then((r) => r.json()),
+      fetch('events.jsonl', { cache: 'no-store' }).then((r) => r.ok ? r.text() : '').catch(() => ''),
+      optJson('projects.json'), optJson('library.json'), optJson('limits.json'), optJson('tasks.json'), optJson('glm.json'),
+    ]);
+    apply(s, parseJsonl(ev), { projects: projects && (Array.isArray(projects) ? projects : projects.projects), library, limits, tasks, glm });
+  } catch (e) {
+    setMeta('Office offline — retrying…');
+  }
+}
+function startLocal() { poll(); setInterval(poll, POLL_MS); }
+
+// ---------- source: /public (signed out, non-owner, or local ?view=public) ----------
+// Builds a state-shaped object from the fixed /public schema, field by field: nothing else is read.
+const pStr = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+const pNum = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0);
+// Same set buildPublic emits (office-push.mjs PUB_STATUSES); only unknown values become sleeping.
+const P_STATUSES = new Set(['working', 'idle', 'sleeping', 'thinking']);
+const pStatus = (v) => (P_STATUSES.has(v) ? v : 'sleeping');
+function fromPublic(p) {
+  const o = asObj(p.orchestrator) || {};
+  const agents = Object.entries(asObj(p.agents) || {}).filter(([, a]) => asObj(a)).map(([id, a]) => ({
+    id: pStr(id, 40), name: pStr(a.name, 40), type: pStr(a.type, 20), status: pStatus(a.status),
+    cap: capOf(a.cap), level: Math.floor(pNum(a.level)) || 1, stats: { tasks: pNum(a.tasks), fails: 0, workMs: 0 } }));
+  const books = Object.entries(asObj(p.books) || {}).filter(([, b]) => asObj(b)).map(([slug, b]) => ({
+    slug: pStr(slug, 40), name: pStr(b.title, 40), group: pStr(b.shelf, 20), color: Math.floor(pNum(b.color)) % 16,
+    order: pNum(b.order), working: b.working === true })).sort((a, b) => a.order - b.order);
+  const sign = asObj(p.sign);
+  return {
+    state: { orchestrator: { name: pStr(o.name, 40) || 'Orchestrator', status: pStatus(o.status), stats: {} }, agents,
+      sign: { open: !sign || sign.open !== false }, updatedAt: pNum(p.pushedAt) || Date.now() },
+    projects: books,
+  };
+}
+function setPublic(on) {
+  if (publicMode !== on) clearOffice();          // never carry one mode's data into the other
+  publicMode = on;
+  document.body.classList.toggle('public', on);
+  if (on) { setFeed(''); closeCard(); }
+}
+function applyPublic(p) {
+  if (!asObj(p)) { setMeta('Public view · no data yet'); return; }
+  const v = fromPublic(p);
+  apply(v.state, [], { projects: v.projects });
+}
+let toastTimer = null;
+function toast(text) {                            // plain text only (textContent)
+  const t = document.getElementById('toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+// Local-only test flag: ?view=public renders the public view from public.json (a hand-written fixture).
+// serve.mjs does not serve it; .tmp-public/serve-public.mjs does. Ignored on hosted domains.
+function startLocalPublic() {
+  setPublic(true);
+  const pull = () => fetch('public.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then(applyPublic).catch(() => setMeta('Public fixture not found (public.json)'));
+  pull(); setInterval(pull, POLL_MS);
+}
+
+// ---------- source: Firebase (hosted, Google sign-in, RTDB /office) ----------
+// PUBLIC client config, NOT a secret: it only identifies the Firebase project.
+// Access is enforced by Google sign-in + database.rules.json. Fill in your own project's
+// values (the kit's docs/SETUP.md, path B step B5); the page stays in local mode until
+// every placeholder is replaced.
+const firebaseConfig = {
+  apiKey: '<FIREBASE_API_KEY>',
+  authDomain: '<FIREBASE_PROJECT_ID>.firebaseapp.com',
+  databaseURL: 'https://<FIREBASE_PROJECT_ID>-default-rtdb.firebaseio.com',
+  projectId: '<FIREBASE_PROJECT_ID>',
+  appId: '<FIREBASE_APP_ID>',
+};
+const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/11.10.0';   // pinned version, official CDN
+// The owner's uid, mirrored from database.rules.json (/office .read). Not a secret; the rules enforce access.
+const OWNER_UID = '<OWNER_UID>';
+// Add your own domain (h === '<YOUR_CUSTOM_DOMAIN>') if you host the office on it.
+const HOSTED = (h) => h.endsWith('.web.app') || h.endsWith('.firebaseapp.com');
+
+function chooseSource() {
+  const q = new URLSearchParams(location.search).get('source');
+  if (q === 'local' || q === 'firebase') return q;
+  return location.protocol !== 'file:' && HOSTED(location.hostname) ? 'firebase' : 'local';
+}
+
+function clearOffice() {
+  state = null; events = []; lastKey = ''; extra = { projects: [], library: null, limits: null, glm: null, tasks: null };
+  document.getElementById('tstats').innerHTML = '';
+  room.querySelectorAll('.spot').forEach((e) => e.remove());
+  signEl.innerHTML = '';
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  feedLibrary();
+}
+
+async function startFirebase() {
+  const authBtn = document.getElementById('authBtn');
+  const configured = Object.values(firebaseConfig).every((v) => typeof v === 'string' && v && !v.includes('REPLACE_WITH_') && !v.includes('<'));
+  if (!configured) {
+    setMeta('Firebase not configured yet');
+    setFeed('Firebase mode is not configured yet: fill in <b>firebaseConfig</b> in index.html (see the kit\'s docs/SETUP.md). ' +
+      'For the local office, open it through serve.mjs or add <b>?source=local</b>.');
+    return;
+  }
+  setMeta('Loading…');
+  let A, D, auth, db;   // A = firebase-auth module, D = firebase-database module
+  try {
+    const [appM, authM, dbM] = await Promise.all([
+      import(`${FIREBASE_SDK}/firebase-app.js`),
+      import(`${FIREBASE_SDK}/firebase-auth.js`),
+      import(`${FIREBASE_SDK}/firebase-database.js`),
+    ]);
+    A = authM; D = dbM;
+    const app = appM.initializeApp(firebaseConfig);
+    auth = A.getAuth(app);
+    db = D.getDatabase(app);
+  } catch (e) {
+    setMeta('Could not load Firebase');
+    setFeed(`Could not load Firebase: ${esc(e && e.message)}`);
+    return;
+  }
+  // Completes a signInWithRedirect fallback and surfaces its error (no-op when there was none).
+  // Kept so the signed-out branch below shows it instead of overwriting it.
+  A.getRedirectResult(auth).catch((e) => toast(`Sign-in failed: ${String((e && (e.code || e.message)) || 'unknown error')}`));
+
+  let unsub = null, metaTimer = null;
+  const stop = () => { if (unsub) unsub(); unsub = null; clearInterval(metaTimer); metaTimer = null; };
+  authBtn.style.display = '';
+  // Public view: subscribes to /public only, so it never triggers a denied read of /office.
+  const showPublic = () => {
+    stop(); setPublic(true); setMeta('Public view · connecting…');
+    unsub = D.onValue(D.ref(db, 'public'), (snap) => applyPublic(snap.val()),
+      (err) => { stop(); setMeta('Connection error'); console.warn('public view:', err && (err.code || err.message)); });
+    metaTimer = setInterval(() => state && renderMeta(), POLL_MS);
+  };
+
+  authBtn.onclick = async () => {
+    if (auth.currentUser) { await A.signOut(auth).catch(() => {}); return; }
+    const provider = new A.GoogleAuthProvider();
+    try {
+      await A.signInWithPopup(auth, provider);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-environment' ||
+          code === 'auth/cancelled-popup-request') {
+        await A.signInWithRedirect(auth, provider).catch((err) => toast(`Sign-in failed: ${String(err && err.code)}`));
+      } else if (code !== 'auth/popup-closed-by-user') {
+        toast(`Sign-in failed: ${String(code || (e && e.message))}`);
+      }
+    }
+  };
+
+  A.onAuthStateChanged(auth, (user) => {
+    stop();
+    if (!user) { authBtn.textContent = 'SIGN IN'; showPublic(); return; }
+    authBtn.textContent = 'SIGN OUT';
+    // Only the owner account reads /office (database.rules.json enforces it; this check just avoids
+    // a denied read and its console error for everyone else). No uid or email is ever shown.
+    const google = (user.providerData || []).some((p) => p && p.providerId === 'google.com');
+    if (user.uid !== OWNER_UID || !google) { showPublic(); toast('This office is private'); return; }
+    setPublic(false);
+    setMeta('Connecting…');
+    unsub = D.onValue(D.ref(db, 'office'), (snap) => {
+      const v = snap.val();
+      if (!v || !v.state) { setMeta('No data yet'); setFeed('Waiting for activity…'); return; }
+      const ev = Array.isArray(v.events) ? v.events : Object.values(v.events || {});
+      apply(v.state, ev, { projects: v.projects, library: v.library, limits: v.limits, glm: v.glm, tasks: v.tasks });
+    }, (err) => {
+      const denied = err && (err.code === 'PERMISSION_DENIED' || /permission/i.test(String(err.message)));
+      if (denied) { showPublic(); toast('This office is private'); return; }
+      stop(); clearOffice();
+      setMeta('Connection error');
+      setFeed(`Connection error: ${esc(err && (err.code || err.message))}`);
+    });
+    metaTimer = setInterval(() => state && renderMeta(), POLL_MS);   // keep "updated X ago" fresh
+  });
+}
+
+// Interface for library.js (plan 3.8). Defined before the library.js tag below.
+// HQ.data = { state, events, projects: [entries], library: library.json|null, limits: limits.json|null }.
+window.HQ = { esc, dur, ago, role, label, openModal, closeModal: closeCard, data: null };
+
+if (chooseSource() === 'firebase') startFirebase();
+else if (!HOSTED(location.hostname) && new URLSearchParams(location.search).get('view') === 'public') startLocalPublic();
+else startLocal();
+setInterval(() => { tick++; draw(); }, 250);
+window.addEventListener('resize', () => { lastKey = ''; draw(); });
+</script>
+<script src="library.js"></script>
+</body>
+</html>

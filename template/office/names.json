@@ -1,0 +1,119 @@
+{
+  "orchestrator": "Prof. Rowan",
+  "pools": {
+    "scout": [
+      "Red",
+      "Leaf",
+      "Ethan",
+      "Lyra",
+      "Lucas"
+    ],
+    "builder": [
+      "Brock",
+      "Surge",
+      "Blaine",
+      "Clair",
+      "Roark"
+    ],
+    "runner": [
+      "Dawn",
+      "May",
+      "Serena",
+      "Hilda",
+      "Rosa"
+    ],
+    "archivist": [
+      "Misty",
+      "Erika",
+      "Sabrina",
+      "Whitney",
+      "Jasmine"
+    ],
+    "security": [
+      "Koga",
+      "Janine",
+      "Aaron",
+      "Malva"
+    ],
+    "worker": [
+      "Brock",
+      "Red",
+      "Dawn",
+      "Misty",
+      "Koga",
+      "Cynthia",
+      "Surge",
+      "Blaine",
+      "Clair",
+      "Roark",
+      "Leaf",
+      "Ethan",
+      "Erika",
+      "Janine",
+      "Aaron",
+      "Malva",
+      "Lance",
+      "Wallace",
+      "Iris",
+      "Steven",
+      "Diantha",
+      "Gardenia",
+      "Maylene",
+      "Crasher Wake",
+      "Fantina",
+      "Byron",
+      "Candice",
+      "Volkner",
+      "Flannery",
+      "Norman",
+      "Winona",
+      "Tate",
+      "Liza",
+      "Juan",
+      "Brawly",
+      "Wattson",
+      "Roxanne"
+    ],
+    "Explore": [
+      "Bugsy",
+      "Falkner",
+      "Morty"
+    ],
+    "Plan": [
+      "Lance",
+      "Wallace",
+      "Iris"
+    ],
+    "general-purpose": [
+      "Youngster Joey",
+      "Lass Janice",
+      "Hiker Anthony",
+      "Picnicker Liz"
+    ],
+    "*": [
+      "Bug Catcher Rick",
+      "Swimmer Luis",
+      "Fisher Ned",
+      "Camper Ted",
+      "Beauty Bridget"
+    ],
+    "planner": [
+      "Cynthia",
+      "Steven",
+      "Diantha"
+    ],
+    "reviewer": [
+      "Lorelei",
+      "Bruno",
+      "Karen",
+      "Will"
+    ],
+    "glm": [
+      "Bill",
+      "Celio",
+      "Lanette",
+      "Bebe",
+      "Amanita"
+    ]
+  }
+}

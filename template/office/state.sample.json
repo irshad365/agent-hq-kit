@@ -1,0 +1,80 @@
+{
+  "orchestrator": {
+    "name": "Prof. Rowan",
+    "status": "working",
+    "task": "planning the next feature",
+    "since": 1760800000000,
+    "stats": { "prompts": 42, "workMs": 5400000 },
+    "tokens": { "in": 210000, "out": 18000, "cacheRead": 640000, "cacheWrite": 90000, "turns": 42 }
+  },
+  "agents": [
+    {
+      "id": "a1",
+      "name": "Brock",
+      "type": "worker",
+      "cloneOf": null,
+      "status": "working",
+      "task": "building the sample kit",
+      "since": 1760800500000,
+      "hiredAt": 1760700000000,
+      "skill": "build",
+      "project": null,
+      "stats": { "tasks": 12, "workMs": 10800000, "fails": 0 },
+      "history": [
+        { "task": "fixing the build script", "start": 1760790000000, "end": 1760793000000, "project": null, "note": "" }
+      ]
+    },
+    {
+      "id": "a2",
+      "name": "Red",
+      "type": "worker",
+      "cloneOf": "Brock",
+      "status": "sleeping",
+      "task": "",
+      "since": 1760798400000,
+      "hiredAt": 1760700000000,
+      "skill": null,
+      "project": null,
+      "stats": { "tasks": 7, "workMs": 6300000, "fails": 1 },
+      "history": [
+        { "task": "writing the setup docs", "start": 1760780000000, "end": 1760789000000, "project": null }
+      ]
+    },
+    {
+      "id": "a3",
+      "name": "Lorelei",
+      "type": "reviewer",
+      "cloneOf": null,
+      "status": "sleeping",
+      "task": "",
+      "since": 1760794800000,
+      "hiredAt": 1760700000000,
+      "skill": null,
+      "project": null,
+      "stats": { "tasks": 3, "workMs": 2700000, "fails": 0 },
+      "history": [
+        { "task": "reviewing the sanitizer changes", "start": 1760770000000, "end": 1760772400000, "project": null }
+      ]
+    },
+    {
+      "id": "a4",
+      "name": "Bill",
+      "type": "glm-worker",
+      "cloneOf": null,
+      "status": "sleeping",
+      "task": "",
+      "since": 1760796000000,
+      "hiredAt": 1760700000000,
+      "skill": null,
+      "project": null,
+      "stats": { "tasks": 3, "workMs": 1800000, "fails": 0 },
+      "history": [
+        { "task": "adding unit tests for the date helper", "start": 1760790000000, "end": 1760791800000, "project": null }
+      ]
+    }
+  ],
+  "pending": {},
+  "live": {},
+  "sign": { "open": true, "provider": "Claude", "since": 1760795000000 },
+  "updatedAt": 1760801000000
+}

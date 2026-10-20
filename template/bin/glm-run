@@ -1,0 +1,55 @@
+#!/bin/sh
+# glm-run: run a headless GLM Claude Code session on a brief.
+#   glm-run <slug> <brief-file>
+# The brief must live under $HOME/HQ/plans/briefs/.
+# Needs $ZAI_API_KEY in the environment; it is passed to the child only as
+# ANTHROPIC_AUTH_TOKEN and is never printed, logged or written.
+# Test hooks: HQ_CLAUDE (binary), HQ_GLM_RUN_SETTINGS (settings path).
+
+HQ_DIR=$HOME/HQ
+BRIEFS_DIR=$HQ_DIR/plans/briefs
+CLAUDE_BIN=${HQ_CLAUDE:-claude}
+SETTINGS=${HQ_GLM_RUN_SETTINGS:-$HQ_DIR/.glm/settings.json}
+
+if [ "$#" -ne 2 ]; then
+  echo "usage: glm-run <slug> <brief-file>" >&2
+  exit 2
+fi
+
+SLUG=$1
+BRIEF=$2
+
+if [ -z "$ZAI_API_KEY" ]; then
+  echo "glm-run: ZAI_API_KEY is empty or not set in this shell" >&2
+  exit 1
+fi
+
+if [ ! -f "$BRIEF" ]; then
+  echo "glm-run: brief file not found: $BRIEF" >&2
+  exit 1
+fi
+
+# Resolve the brief's directory so ../ and symlinks can't escape briefs/.
+BRIEF_DIR=$(cd "$(dirname "$BRIEF")" 2>/dev/null && pwd -P)
+BRIEFS_REAL=$(cd "$BRIEFS_DIR" 2>/dev/null && pwd -P)
+BRIEF_ABS=$BRIEF_DIR/$(basename "$BRIEF")
+case "$BRIEF_ABS" in
+  "$BRIEFS_REAL"/*) ;;
+  *)
+    echo "glm-run: brief must be under $BRIEFS_DIR/" >&2
+    exit 1
+    ;;
+esac
+
+if [ ! -f "$SETTINGS" ]; then
+  echo "glm-run: settings file not found: $SETTINGS" >&2
+  exit 1
+fi
+
+cd "$HQ_DIR" || { echo "glm-run: cannot cd to $HQ_DIR" >&2; exit 1; }
+
+PROMPT="You are an HQ Worker running on GLM (run slug: $SLUG). Do the task in the brief at $BRIEF_ABS. First re-check the brief's Repo state against the real repo; if it differs, stop and report without changing anything. Do not launch agents. Do the work, then fill the brief's Result section from the real diff and test output (what changed, diff stat, test output, open items), and set the brief's status to done or blocked."
+
+# HQ_GLM_SLUG / HQ_GLM_BRIEF tell the office hook which GLM desk this is and what it is doing.
+ANTHROPIC_AUTH_TOKEN=$ZAI_API_KEY HQ_PROVIDER=glm HQ_GLM_SLUG=$SLUG HQ_GLM_BRIEF=$BRIEF_ABS \
+  exec "$CLAUDE_BIN" -p --settings "$SETTINGS" --permission-mode acceptEdits "$PROMPT"

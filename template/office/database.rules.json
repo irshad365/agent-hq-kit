@@ -1,0 +1,201 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "office": {
+      ".read": "auth != null && auth.uid === '<OWNER_UID>' && auth.token.firebase.sign_in_provider === 'google.com'",
+      ".write": "auth != null && auth.uid === 'office-writer'",
+      "state": {
+        ".validate": "newData.hasChildren(['orchestrator', 'agents', 'updatedAt'])",
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "sign": {
+          "open": { ".validate": "newData.isBoolean()" },
+          "closedText": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "provider": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "since": { ".validate": "newData.isNumber()" },
+          "closedAt": { ".validate": "newData.isNumber()" },
+          "closedProvider": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "reopensAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        }
+      },
+      "events": {
+        "$i": {
+          ".validate": "$i.matches(/^[1-4]?[0-9]$/) && newData.hasChildren(['ts', 'kind'])",
+          "ts": { ".validate": "newData.isNumber()" },
+          "kind": { ".validate": "newData.isString() && newData.val().length <= 32" },
+          "agent": { ".validate": "newData.isString() && newData.val().length <= 300" },
+          "task": { ".validate": "newData.isString() && newData.val().length <= 300" },
+          "reason": { ".validate": "newData.isString() && newData.val().length <= 300" },
+          "project": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "provider": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "total": { ".validate": "newData.isNumber()" }
+        }
+      },
+      "pushedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 300000" },
+      "projects": {
+        "$i": {
+          ".validate": "$i.matches(/^[1-3]?[0-9]$/) && newData.hasChildren(['slug', 'name', 'group'])",
+          "slug": { ".validate": "newData.isString() && newData.val().length <= 40 && newData.val().matches(/^[a-z0-9-]+$/)" },
+          "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "aliases": {
+            "$k": { ".validate": "$k.matches(/^[0-9]$/) && newData.isString() && newData.val().length <= 40" }
+          },
+          "description": { ".validate": "newData.isString() && newData.val().length <= 160" },
+          "stack": {
+            "$k": { ".validate": "$k.matches(/^[0-7]$/) && newData.isString() && newData.val().length <= 30" }
+          },
+          "stackColorKey": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "repo": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "hosting": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "status": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "group": { ".validate": "newData.isString() && (newData.val() === 'active' || newData.val() === 'maintained' || newData.val() === 'dormant')" },
+          "owned": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        }
+      },
+      "library": {
+        "generatedAt": { ".validate": "newData.isNumber()" },
+        "src": {
+          "securityMtime": { ".validate": "newData.isNumber()" },
+          "lessonsMtime": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "security": {
+          "$slug": {
+            ".validate": "$slug.length <= 40 && $slug.matches(/^[a-z0-9-]+$/)",
+            "open": { ".validate": "newData.isNumber()" },
+            "critical": { ".validate": "newData.isBoolean()" },
+            "items": {
+              "$k": {
+                ".validate": "$k.matches(/^[0-9]$/) && newData.hasChildren(['id', 'sev'])",
+                "id": { ".validate": "newData.isString() && newData.val().matches(/^SEC-[0-9][0-9][0-9][0-9]?$/)" },
+                "sev": { ".validate": "newData.isString() && (newData.val() === 'low' || newData.val() === 'medium' || newData.val() === 'high' || newData.val() === 'critical')" },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          }
+        },
+        "lessons": {
+          "$slug": { ".validate": "$slug.length <= 40 && $slug.matches(/^[a-z0-9-]+$/) && newData.isNumber()" }
+        },
+        "$other": { ".validate": false }
+      },
+      "limits": {
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "provider": { ".validate": "newData.isString() && (newData.val() === 'Claude' || newData.val() === 'GLM')" },
+        "model": { ".validate": "newData.isString() && newData.val().length <= 60" },
+        "fiveHour": {
+          "usedPct": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "resetsAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "sevenDay": {
+          "usedPct": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "resetsAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "$other": { ".validate": false }
+      },
+      "glm": {
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "fetchedAt": { ".validate": "newData.isNumber()" },
+        "source": { ".validate": "newData.isString() && (newData.val() === 'zai' || newData.val() === 'local')" },
+        "usedPct": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+        "used": { ".validate": "newData.isNumber()" },
+        "limit": { ".validate": "newData.isNumber()" },
+        "resetsAt": { ".validate": "newData.isNumber()" },
+        "h5": {
+          "usedPct": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "resetsAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "wk": {
+          "usedPct": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "resetsAt": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+        "models": {
+          "$i": {
+            ".validate": "$i.matches(/^[0-5]$/) && newData.hasChildren(['name', 'tokens'])",
+            "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "tokens": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "error": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "$other": { ".validate": false }
+      },
+      "tasks": {
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "tasks": {
+          "$i": {
+            ".validate": "$i.matches(/^[1-4]?[0-9]$/) && newData.hasChildren(['id'])",
+            "id": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "project": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "provider": { ".validate": "newData.isString() && (newData.val() === 'Claude' || newData.val() === 'GLM')" },
+            "sessionId": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "agent": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "startedAt": { ".validate": "newData.isNumber()" },
+            "endedAt": { ".validate": "newData.isNumber()" },
+            "tokens": {
+              "in": { ".validate": "newData.isNumber()" },
+              "out": { ".validate": "newData.isNumber()" },
+              "cacheRead": { ".validate": "newData.isNumber()" },
+              "cacheWrite": { ".validate": "newData.isNumber()" },
+              "$other": { ".validate": false }
+            },
+            "contexts": { ".validate": "newData.isNumber()" },
+            "rework": { ".validate": "newData.isNumber()" },
+            "verified": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      },
+      "$other": { ".validate": false }
+    },
+    "public": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'office-writer'",
+      ".validate": "newData.hasChildren(['pushedAt', 'sign', 'orchestrator'])",
+      "pushedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 300000" },
+      "sign": {
+        ".validate": "newData.hasChildren(['open'])",
+        "open": { ".validate": "newData.isBoolean()" },
+        "$other": { ".validate": false }
+      },
+      "orchestrator": {
+        ".validate": "newData.hasChildren(['name', 'status'])",
+        "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "status": { ".validate": "newData.isString() && newData.val().length <= 12 && newData.val().matches(/^[a-z]+$/)" },
+        "$other": { ".validate": false }
+      },
+      "agents": {
+        "$agentKey": {
+          ".validate": "$agentKey.length <= 40 && $agentKey.matches(/^[A-Za-z0-9_-]+$/) && newData.hasChildren(['name', 'type', 'status', 'level', 'tasks'])",
+          "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "type": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "status": { ".validate": "newData.isString() && newData.val().length <= 12 && newData.val().matches(/^[a-z]+$/)" },
+          "level": { ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 999" },
+          "tasks": { ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0" },
+          "cap": { ".validate": "newData.isString() && newData.val().matches(/^(survey|build|verify|security|record|chores|runbook)?$/)" },
+          "$other": { ".validate": false }
+        }
+      },
+      "books": {
+        "$slug": {
+          ".validate": "$slug.length <= 40 && $slug.matches(/^[a-z0-9-]+$/) && newData.hasChildren(['title', 'color', 'shelf', 'working', 'order'])",
+          "title": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "color": { ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 15" },
+          "shelf": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "working": { ".validate": "newData.isBoolean()" },
+          "order": { ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= 0 && newData.val() <= 99" },
+          "$other": { ".validate": false }
+        }
+      },
+      "$other": { ".validate": false }
+    }
+  }
+}

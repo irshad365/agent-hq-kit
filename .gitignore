@@ -1,0 +1,10 @@
+state.json
+events.jsonl
+tasks.json
+glm.json
+limits.json
+.glm-fetch
+.lock
+node_modules
+.tmp-*
+.backup-*
